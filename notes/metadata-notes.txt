@@ -1,0 +1,18 @@
+CloudFormation Notes
+
+Metadata:
+
+    optional section to include arbitratry details about the template or resource
+
+    keys that have special meaning:
+
+        AWS::CloudFormation::Interface:
+            define grouping and ordering of input parameters
+        AWS::CloudFormation::Authentication:
+            specify authentication credentials for files/sources in AWS::CloudFormation::Init
+        AWS::CloudFormation::Init:
+            define config tasks for cfn-init
+            most powerful usage of metadata
+        
+    Parameter labels and groupings 
+        

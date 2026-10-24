@@ -1,0 +1,314 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Basic VPC CloudFormation Template
+
+# -------------------------------------------------------
+# VPC Parameters
+# -------------------------------------------------------
+
+Parameters:
+
+  pEnvironmentName:
+    Description: Prefix used for resouce names and tags
+    Type: String
+    AllowedValues: [PROD, DEV]
+    Default: DEV
+
+  pVPCIPBlocks:
+    Description: CIDR Range for VPC
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 10.1.0.0/16
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: Must be a Valid CIDR Range
+
+  pPublicSubnet1IPBlocks:
+    Description: Public Subnet 1 IP Blocks
+    Type: String
+    Default: 10.1.1.0/24
+
+  pPublicSubnet2IPBlocks:
+    Description: Public Subnet 2 IP Blocks
+    Type: String
+    Default: 10.1.2.0/24 
+
+  pPrivateSubnet1IPBlocks:
+    Description: Private Subnet 1 IP Block
+    Type: String
+    Default: 10.1.3.0/24
+  
+  pPrivateSubnet2IPBlocks:
+    Description: Private Subnet 2 IP Block
+    Type: String
+    Default: 10.1.4.0/24
+
+  pMgmtSubnetIPBlocks:
+    Description: Management Subnet Block
+    Type: String
+    Default: 10.1.0.0/24
+
+# -------------------------------------------------------
+# Metadata
+# -------------------------------------------------------
+
+Metadata:
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "VPC Configuration"
+        Parameters:
+          - pEnvironmentName
+          - pVPCIPBlocks
+          - pSubnetIDs
+      - Label:
+          default: "Public Subnet Configuration"
+        Parameters:
+          - pPublicSubnet1IPBlocks
+          - pPublicSubnet2IPBlocks
+      - Label:
+          default: "Private Subnet Configuratioin"
+        Parameters:
+          - pPrivateSubnet1IPBlocks
+          - pPrivateSubnet2IPBlocks
+      - Label:
+          default: "Managment Subnet Configuration"
+        Parameters:
+          - pMgmtSubnetIPBlocks
+    ParameterLabels:
+      pEnvironmentName:
+        default: "Please Select an Environment."
+      pVPCIPBlocks:
+        default: "Please Enter a CIDR Range."
+      pSubnetIDs:
+        default: "List of Subnets."
+  
+# -------------------------------------------------------
+# VPC and Internet Gateway
+# -------------------------------------------------------
+
+Resources:
+
+  rVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref pVPCIPBlocks
+      EnableDnsSupport: true
+      EnableDnsHostnames: false
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-vpc
+
+  rInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-igw
+
+  rInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref rInternetGateway
+      VpcId: !Ref rVPC
+
+# -------------------------------------------------------
+# Public Subnets
+# -------------------------------------------------------
+
+  rPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref pPublicSubnet1IPBlocks
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref rVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-public-subnet-1
+
+  rPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref pPublicSubnet2IPBlocks
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref rVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-public-subnet-2
+
+# -------------------------------------------------------
+# Private Subnets
+# -------------------------------------------------------
+
+  rPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref pPrivateSubnet1IPBlocks
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref rVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-private-subnet-1
+
+  rPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref pPrivateSubnet2IPBlocks
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref rVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-private-subnet-2
+
+# -------------------------------------------------------
+# Management Subnet
+# -------------------------------------------------------
+
+  rMgmtSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [2, !GetAZs '']
+      CidrBlock: !Ref pMgmtSubnetIPBlocks
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref rVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-mgmt-subnet
+
+# -------------------------------------------------------
+# Public Route Tables (default route to the Internet Gateway)
+# -------------------------------------------------------
+
+  rPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref rVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-public-rt
+
+  rDefaultPublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref rInternetGateway
+      RouteTableId: !Ref rPublicRouteTable
+
+  rPublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref rPublicRouteTable
+      SubnetId: !Ref rPublicSubnet1
+
+  rPublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref rPublicRouteTable
+      SubnetId: !Ref rPublicSubnet2
+
+# --------------------------------------------------------
+# Private Route Tables (local VPC routing only)
+# --------------------------------------------------------
+
+  rPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref rVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-private-rt
+
+  rPrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref rPrivateRouteTable
+      SubnetId: !Ref rPrivateSubnet1
+
+  rPrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref rPrivateRouteTable
+      SubnetId: !Ref rPrivateSubnet2
+
+# --------------------------------------------------------
+# Management Route Tables
+# --------------------------------------------------------
+
+  rMgmtRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref rVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-mgmt-rt
+
+  rMgmtSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref rMgmtRouteTable
+      SubnetId: !Ref rMgmtSubnet
+
+# -------------------------------------------------------
+# Outputs
+# -------------------------------------------------------
+
+Outputs:
+
+  oVPC:
+    Description: VPC ID
+    Value: !Ref rVPC
+    Export:
+      Name: VPC-ID
+  
+  oPublicSubnet1:
+    Description: Public Subnet 1
+    Value: !Ref rPublicSubnet1
+    Export:
+      Name: Public-Subnet-1
+
+  oPublicSubnet2:
+    Description: Public Subnet 2
+    Value: !Ref rPublicSubnet2
+    Export:
+      Name: Public-Subnet-2
+
+  oPrivateSubnet1:
+    Description: Private Subnet 1
+    Value: !Ref rPrivateSubnet1
+    Export:
+      Name: Private-Subnet-1
+
+  oPrivateSubnet2:
+    Description: Private Subnet 2
+    Value: !Ref rPrivateSubnet2
+    Export:
+      Name: Private-Subnet-2
+
+  oMgmtSubnet:
+    Description: Management Subnet
+    Value: !Ref rMgmtSubnet
+    Export:
+      Name: Mgmt-Subnet
+
+  oPublicRouteTable:
+    Description: Public Route Table
+    Value: !Ref rPublicRouteTable
+    Export:
+      Name: Public-Rt
+
+  oPrivateRouteTable:
+    Description: Private Route Table
+    Value: !Ref rPrivateRouteTable
+    Export:
+      Name: Private-Rt
+
+  oMgmtRouteTable:
+    Description: Management Route Table
+    Value: !Ref rMgmtRouteTable
+    Export:
+      Name: Mgmt-Rt

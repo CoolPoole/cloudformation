@@ -1,0 +1,12 @@
+CloudFormation Notes
+
+Outputs:
+
+    declares optional values that can be imported into other stacks
+        if you export them first
+    can view the outputs in the AWS Console or in using the AWS CLI
+
+    Cross Stack Reference:
+        Fn::ImportValue function is used to reference an output from another stack
+        cannot delete the underlying stack until all the references are deleted
+        

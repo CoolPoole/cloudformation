@@ -1,0 +1,51 @@
+Cloudformation Notes
+
+Parameters:
+    provide inputs to your AWS CF template
+    important if:
+        reuseability
+        inputs cannot be determined ahead of time
+
+    when to use:
+        if likely to change in the future
+    
+    Settings:
+        Type: string, number, SSM parameter store, description, etc.
+
+    Reference:
+        Fn::Ref function (i.e., !Ref)
+        Used everywhere except:
+            AWSTemplateFormatVersion
+            Description
+            Transform
+            Mappings
+        
+    Notes:
+        can use:
+            MinValue, MaxValue, AllowedValues, ConstraintDescription
+            MaxLength, MinLength, AllowedPattern, CommaDelimitedList
+
+        reference: AWS Cloudformation User Guide
+
+    SSM Parameter Type:
+        Systems Manager Parameter Store
+        CF always fetches latest value
+        doesn't store Secure String values
+
+        Type = AWS::SSM::Parameter::Value<String>
+
+        Create your own parameters to be stored
+        
+    Pseudo Parameters:
+        can be used at any time
+        on by default
+
+        Examples:
+            AWS::AccountId
+            AWS::Region
+            AWS::StackId
+            AWS::StackName
+            AWS::NotificationARNs
+            AWS::NoValue
+            AWS::Partition
+            AWS::URLSuffix

@@ -1,0 +1,21 @@
+Cloudformation Notes
+
+Mappings:
+
+    fixed variables within CloudFormation template
+    differentiate between environments, regions, AMIs, etc.
+    values are hardcoded within template
+
+    when to use vs parameters:
+        when you know the values in advance
+            regions
+            availability zone
+            AWS account
+            environments
+
+    safer control over template
+    parameters are more for user specific values
+
+    Fn::FindInMap - return named value from a specific key
+
+    

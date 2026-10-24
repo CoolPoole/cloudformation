@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Basic Security Group CloudFormation Template
+
+# ------------------------------------------------------
+# Security Group Parameters
+# ------------------------------------------------------
+
+Parameters:
+
+  # Need to figure out how to add multiple rules to each SG via Parameter
+  pEnvironmentName:
+    Description: Prefix for Resource names and Tags
+    Type: String
+    AllowedValues: [PROD, DEV]
+    Default: DEV
+
+  pDepartmentName:
+    Description: Identify Deparment/Team Name for Billing
+    Type: String
+    Default: ShadowOps
+
+  pSecurityGroupDescription:
+    Description: Security Group Description
+    Type: String
+
+  #pSecurityGroupPort:
+    #Description: Security Group Ports
+    #Type: Number
+    #MinValue: 0
+    #MaxValue: 65535
+
+  #pSecurityGroupIngressCIDR:
+    #Description: Inbound IP Address Range
+    #Type: String
+    #MinLength: '9'
+    #MaxLength: '18'
+    #Default: 0.0.0.0/0
+    #AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    #ConstraintDescription: Must be a Valid CIDR Range
+
+# -------------------------------------------------------
+# Resources
+# -------------------------------------------------------
+
+Resources:
+
+  rInternalSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: all inbound internal inbound connections
+      GroupName: "Internal Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          # SourcePrefixListId: pl-xxxxxx
+          # SourceSecurityGroupId: sg-xxxxxx
+          Description: Any
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-INTERNAL-SG
+        - Key: Department
+          Value: !Sub ${pDepartmentName}
+          
+  rExternalSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: allow external inbound connections
+      GroupName: "External Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 69.140.176.112/32
+          # SourcePrefixListId: pl-xxxxxx
+          # SourceSecurityGroupId: sg-xxxxxx
+          Description: Gibson
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-EXTERNAL-SG
+        - Key: Department
+          Value: !Sub ${pDepartmentName}
+
+  rMgmtSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: all management inbound connections
+      GroupName: "Management Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 69.140.176.112/32
+          Description: Gibson
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 69.140.176.112/32
+          Description: Linus
+        - IpProtocol: tcp
+          FromPort: 4353
+          ToPort: 4353
+          CidrIp: 69.140.176.112/32
+          # SourcePrefixListId: pl-xxxxxx
+          # SourceSecurityGroupId: sg-xxxxxx
+          Description: Nikon
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-MGMT-SG
+        - Key: Department
+          Value: !Sub ${pDepartmentName}
+
+# ---------------------------------------------------------
+# Outputs
+# ---------------------------------------------------------
+
+Outputs:
+
+  oStackMgmtSecurityGroup:
+    Description: Management Security Group
+    Value: !Ref rMgmtSecurityGroup
+    Export:
+      Name: MgmtSecurityGroup
+
+  oStackExternalSecurityGroup:
+    Description: External Security Group
+    Value: !Ref rExternalSecurityGroup
+    Export:
+      Name: ExternalSecurityGroup
+
+  oStackInternalSecurityGroup:
+    Description: Internal Security Group
+    Value: !Ref rInternalSecurityGroup
+    Export:
+      Name: InternalSecurityGroup
+

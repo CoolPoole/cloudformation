@@ -1,0 +1,32 @@
+CloudFormation Notes
+
+Rules:
+
+    gives the ability to validate within a parameter
+    used to perform parameter validations based on values of other parameters
+    ex. ensure all subnets are in the same VPC
+
+    each rule consists of:
+        Condition
+        Assertion
+
+    If no condition is defined then the assertion will take effect for every update/create operation
+
+    Intrinsic Functions:
+        
+        used to define a rule condition and assertion
+        can only be used in Rules section
+        can be nested but the result must either be true or false
+
+        Supported:
+            Fn::And
+            Fn::Contains
+            Fn::EachMemberEquals
+            Fn::EachMemberIn
+            Fn::Equals
+            Fn::If
+            Fn::Not
+            Fn::Or
+            Fn::RefAll
+            Fn::ValueOf
+            Fn::ValueOfAll

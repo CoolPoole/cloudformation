@@ -1,0 +1,29 @@
+Cloudformation Notes
+
+Conditions:
+
+    used to control creation of resources or outputs based on a condition
+    logical ID is for you to choose
+
+    Intrinsic function can be any of:
+        Fn::And
+        Fn::Equals
+        Fn::If
+        Fn::Not
+        Fn::Or
+
+    Example:
+
+    Conditions:
+        CreateProdResources: !Equals [ !Ref EnvType, prod ]
+
+    Resources:
+        MountPoint:
+            Type: AWS::EC2::VolumeAttachment
+            Condition: CreateProdResources
+
+    Fn::GetAtt
+        attributes are attached to any resources you create
+
+    See AWS Documentation on Conditions Functions
+    
