@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Basic Security Group CloudFormation Template
+
+# -----------------------------------------------------
+# Parameters
+#------------------------------------------------------
+
+Parameters:
+
+  pEnvironmentName:
+    Description: Environment Name
+    Type: String
+    AllowedValues: [Workload, Development]
+    Default: Development
+    ConstraintDescription: must be workload or development
+
+  pInstanceType:
+    Description: EC2 Instance Type
+    Type: String
+    Default: t3.large
+    AllowedValues:
+      - t3.large
+      - c5.4xlarge
+      - c6i.4xlarge
+      - c7i.4xlarge
+
+  pImageID:
+    Description: Various Image IDs
+    Type: String
+    Default: ami-08568a8b87f9b8ee3
+    AllowedValues:
+      - ami-08568a8b87f9b8ee3
+      - ami-03b1242ace3ae693f
+      - ami-018adf6c926c8bf88
+
+# ------------------------------------------------------
+# Rules
+# ------------------------------------------------------
+
+Rules:
+
+  rlsWorkloadInstanceType:
+    RuleCondition: !Equals
+      - !Ref pEnvironmentName
+      - Workload
+    Assertions:
+      - Assert:
+          'Fn::Contains':
+            - - c5.4xlarge
+              - c6i.4xlarge
+              - c7i.4xlarge
+            - !Ref pInstanceType
+        AssertDescription: 'You cannot use a t3.large for Production'
+      - Assert:
+          'Fn::Contains':
+            - - ami-018adf6c926c8bf88
+            - !Ref pImageID
+        AssertDescription: 'You cannot deploy a 25Mps or 200Mbps instance in Production'
+
+  rlsDevelopmentInstanceType:
+    RuleCondition: !Equals
+      - !Ref pEnvironmentName
+      - Development
+    Assertions:
+      - Assert:
+          'Fn::Contains':
+            - - c5.4xlarge
+              - t3.large
+            - !Ref pInstanceType
+        AssertDescription: 'You cannot use a c6i.4xlarge or c7i.4xlarge for Development'
+      - Assert:
+          'Fn::Contains':
+            - - ami-08568a8b87f9b8ee3
+              - ami-03b1242ace3ae693f
+            - !Ref pImageID
+        AssertDescription: 'You do not need a full image in Development!'
+
+# ------------------------------------------------------
+# Metadata
+# ------------------------------------------------------
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Environment Configuration"
+        Parameters:
+          - pEnvironmentName
+      - Label:
+          default: "EC2 Configuration"
+        Parameters:
+          - pInstanceType
+          - pImageID
+    ParameterLabels:
+      pEnvironmentName:
+        default: "Which Environment will this be deployed to?"
+      pInstanceType:
+        default: "What size instance would you like?"
+      pImageID:
+        default: "What Image would you like? 25 Mbps, 200 Mbps, or Full?"
+
+# ------------------------------------------------------
+# Resources
+# ------------------------------------------------------
+
+Resources:
+
+  rEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: xxxxx
+      BlockDeviceMappings:
+        - DeviceName: /dev/xda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 100
+            DeleteOnTermination: false
+            Encrypted: true
+        - DeviceName: /dev/xvdb
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 20
+            DeleteOnTermination: false
+            Encrypted: true
+      EnclaveOptions:
+        Enabled: false
+      HibernationOptions:
+        Configured: false
+      InstanceType: !Ref pInstanceType
+      ImageId: !Ref pImageID
+      InstanceInitiatedShutdownBehavior: stop
+      Tenancy: default
+      KeyName: xxxxx
+      LaunchTemplate:
+        LaunchTemplateId: !ImportValue xxxxx
+        Version: '1'
+      Monitoring: false
+      NetworkInterfaces:
+        - GroupSet:
+            - !ImportValue MgmtSecurityGroup
+          PrivateIpAddress: xx.xx.xx.xx
+          AssociatePublicIpAddress: false
+          DeviceIndex: '0'
+          DeleteOnTermination: true
+          SubnetId:
+            - !ImportValue Mgmt-Subnet
+        - GroupSet:
+            - !ImportValue InternalSecurityGroup
+          PrivateIpAddress: xx.xx.xx.xx
+          AssociatePublicIpAddress: false
+          DeviceIndex: '0'
+          DeleteOnTermination: true
+          SubnetId:
+            - !ImportValue Private-Subnet-1
+        - GroupSet:
+            - !ImportValue ExternalSecurityGroup
+          PrivateIpAddress: xx.xx.xx.xx
+          AssociatePublicIpAddress: false
+          DeviceIndex: '0'
+          DeleteOnTermination: true
+          SubnetId:
+            - !ImportValue Public-Subnet-1
+      PropagateTagsToVolumeCreation: true
+      SourceDestCheck: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-vm
