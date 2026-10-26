@@ -1,12 +1,12 @@
 # Welcome to CloudFormation
 
-Repos designated to CloudFormation labbing and learning
+Repo designated to CloudFormation labbing and learning
 
 ## Notes
 
 The notes folder contains individual notes around the learned aspect of Cloudformation.
 
-Contents:
+### Contents:
 ---
 - Parameters
 - Resources
@@ -44,7 +44,18 @@ Contents:
     - AWS::EC2::Route
     - AWS::EC2::SubnetRouteTableAssociation
 
+### instances.yaml
+---
 
+- Contains parameters, rules, metadata, resouces, and outputs to show creation of an EC2 instance
+- Uses !Ref, !Sub, !ImportValue commands
+    - !Ref is used to reference resouces
+    - !Sub is to substitue a parameter value into a string
+    - !ImportValue is to grab a value from the Exported Output of another CF Template
+- Types:
+    - AWS::EC2::Instance
+    - AWS::EC2::NetworkInterface
+    - AWS::EC2::NetworkInterfaceAttachment
 
 
 
