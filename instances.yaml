@@ -33,6 +33,11 @@ Parameters:
       - ami-03b1242ace3ae693f
       - ami-018adf6c926c8bf88
 
+  pKeyPairID:
+    Description: SSH Keypair
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: my-test-keypair
+
 # ------------------------------------------------------
 # Rules
 # ------------------------------------------------------
@@ -91,6 +96,7 @@ Metadata:
         Parameters:
           - pInstanceType
           - pImageID
+          - pKeyPairID
     ParameterLabels:
       pEnvironmentName:
         default: "Which Environment will this be deployed to?"
@@ -98,6 +104,8 @@ Metadata:
         default: "What size instance would you like?"
       pImageID:
         default: "What Image would you like? 25 Mbps, 200 Mbps, or Full?"
+      pKeyPairID:
+        default: "Select Your KeyPair."
 
 # ------------------------------------------------------
 # Resources
@@ -108,7 +116,7 @@ Resources:
   rEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      AvailabilityZone: xxxxx
+#      AvailabilityZone: xxxxx
       BlockDeviceMappings:
         - DeviceName: /dev/xda
           Ebs:
@@ -130,38 +138,73 @@ Resources:
       ImageId: !Ref pImageID
       InstanceInitiatedShutdownBehavior: stop
       Tenancy: default
-      KeyName: xxxxx
-      LaunchTemplate:
-        LaunchTemplateId: !ImportValue xxxxx
-        Version: '1'
+      KeyName: !Ref pKeyPairID
+#      LaunchTemplate:
+#        LaunchTemplateId: !ImportValue xxxxx
+#        Version: '1'
       Monitoring: false
       NetworkInterfaces:
         - GroupSet:
             - !ImportValue MgmtSecurityGroup
-          PrivateIpAddress: xx.xx.xx.xx
+          PrivateIpAddress: 10.1.2.15
           AssociatePublicIpAddress: false
           DeviceIndex: '0'
           DeleteOnTermination: true
           SubnetId:
             - !ImportValue Mgmt-Subnet
-        - GroupSet:
-            - !ImportValue InternalSecurityGroup
-          PrivateIpAddress: xx.xx.xx.xx
-          AssociatePublicIpAddress: false
-          DeviceIndex: '0'
-          DeleteOnTermination: true
-          SubnetId:
-            - !ImportValue Private-Subnet-1
-        - GroupSet:
-            - !ImportValue ExternalSecurityGroup
-          PrivateIpAddress: xx.xx.xx.xx
-          AssociatePublicIpAddress: false
-          DeviceIndex: '0'
-          DeleteOnTermination: true
-          SubnetId:
-            - !ImportValue Public-Subnet-1
       PropagateTagsToVolumeCreation: true
       SourceDestCheck: false
+      SubnetId: !ImportValue Mgmt-Subnet
       Tags:
         - Key: Name
           Value: !Sub ${pEnvironmentName}-vm
+        - Key: Department
+          Value: "EmotionalAmeobas"
+
+  rInternalInterface:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: "The Internal Subnet Interface"
+      GroupSet:
+        - !ImportValue InternalSecurityGroup
+      PrivateIpAddress: 10.1.3.15
+      SourceDestCheck: false
+      SubnetId: !ImportValue Private-Subnet-1
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-internal
+
+  rInternalInterfaceAttachment:
+    Type: AWS::EC2::NetworkInterfaceAttachment
+    Properties:
+      DeleteOnTermination: true
+      DeviceIndex: 1
+      InstanceId: !Ref rEC2Instance
+      NetworkInterfaceId: !Ref rInternalInterface
+
+  rExternalInterface:
+    Type:  AWS::EC2::NetworkInterface
+    Properties:
+      Description: "The External Subnet Interface"
+      GroupSet:
+        - !ImportValue ExternalSecurityGroup
+      PrivateIpAddress: 10.1.1.15
+      SourceDestCheck: false
+      SubnetId: !ImportValue Public-Subnet-1
+      Tags:
+        - Key: Name
+          Value: !Sub ${pEnvironmentName}-external
+
+  rExternalInterfaceAttachment:
+    Type: AWS::EC2::NetworkInterfaceAttachment
+    Properties:
+      DeleteOnTermination: true
+      DeviceIndex: 2
+      InstanceId: !Ref rEC2Instance
+      NetworkInterfaceId: !Ref rExternalInterface
+
+# -------------------------------------------------------
+# Outputs
+# -------------------------------------------------------
+
+
