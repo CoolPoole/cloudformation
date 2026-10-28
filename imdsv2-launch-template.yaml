@@ -5,23 +5,25 @@ Description: Basic Launch Template for CloudFormation to force IMDSv2 only
 # Resources
 # -----------------------------------------------------------------
 
-rIMDSv2LaunchTemplate:
-  Type: AWS::EC2::LaunchTemplate
-  Properties:
-    LaunchTemplateName: IMDSv2-LaunchTemplate
-    LaunchTemplateData:
-      MetadataOptions:
-        HttpEndpoint: enabled
-        HttpPutResponseHopLimit: 5
-        HttpTokens: required
+Resources:
+  rIMDSv2LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: IMDSv2-LaunchTemplate
+      LaunchTemplateData:
+        MetadataOptions:
+          HttpEndpoint: enabled
+          HttpPutResponseHopLimit: 5
+          HttpTokens: required
 
 # -----------------------------------------------------------------
 # Outputs
 # -----------------------------------------------------------------
 
 Outputs:
+
   oIMDSv2:
     Description: Logical ID for IMDSv2-LaunchTemplate
-    Value: !Ref IMDSv2-LaunchTemplate
+    Value: !Ref rIMDSv2LaunchTemplate
     Export:
       Name: IMDSv2-LaunchTemplate

@@ -139,9 +139,9 @@ Resources:
       InstanceInitiatedShutdownBehavior: stop
       Tenancy: default
       KeyName: !Ref pKeyPairID
-#      LaunchTemplate:
-#        LaunchTemplateId: !ImportValue xxxxx
-#        Version: '1'
+      LaunchTemplate:
+        LaunchTemplateId: !ImportValue IMDSv2-LaunchTemplate
+        Version: '1'
       Monitoring: false
       NetworkInterfaces:
         - GroupSet:
