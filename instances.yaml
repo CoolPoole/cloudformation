@@ -38,6 +38,19 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
     Default: my-test-keypair
 
+  pAdminPassword:
+    Description: Admin Password for Setup
+    Type: String
+    NoEcho: true
+    MinLength: 12
+    AllowedPattern: '^[A-Za-z0-9!@#%^&*()_+=.,:;?-]+$'
+    ConstraintDescription: Min 12 characters; letters, digits, special characters.
+
+  pHostName:
+    Description: BIG-IP Hostname
+    Type: String
+    Default: bigip01.justcoolpoole.local
+
 # ------------------------------------------------------
 # Rules
 # ------------------------------------------------------
@@ -152,9 +165,34 @@ Resources:
           DeleteOnTermination: true
           SubnetId:
             - !ImportValue Mgmt-Subnet
-      PropagateTagsToVolumeCreation: true
+      PropagateTagsToVolumeOnCreation: true
       SourceDestCheck: false
       SubnetId: !ImportValue Mgmt-Subnet
+      UserData:
+        Fn:Base64: !Sub |
+          #!/bin/bash
+          exec > /var/log/userdata-bootstrap.log 2>&1
+          set -x
+
+          # Wait for mcpd to be fully up
+          for i in $(seq 1 90); do
+            if tmsh show sys mcp-state field-fmt 2>/dev/null | grep -q 'running'; then
+              break
+            fi
+            sleep 10
+          done
+
+          # extra readiness check; config must actually be readable
+          until tmsh list sys global-settings >/dev/null 2>&1; do sleep 5; done
+
+          # set admin password
+          tmsh modify auth user admin password '{pAdminPassword}'
+
+          # optional basics
+          tmsh modify sys global-settings hostname ${Hostname}
+
+          tmsh save sys config
+          echo "Bootstap Complete"
       Tags:
         - Key: Name
           Value: !Sub ${pEnvironmentName}-vm
