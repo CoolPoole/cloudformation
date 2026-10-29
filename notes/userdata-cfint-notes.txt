@@ -1,0 +1,35 @@
+CloudFormation Notes
+
+UserData and CFN-Init:
+
+Allows you to preconfigure your instance at the bootstrap level
+
+UserData:
+
+    user-data script
+    use Fn::Base64 to pass the entire script
+    user-data script log is /var/log/cloud-init-output.log
+
+CloudFormation Helper Scripts:
+
+    4 Python scripts that come installed on Amazon Linux AMIs
+        can be installed on non-AWS Linux AMIs via yum
+
+    cfn-init:
+        retrieve and interpret resource metadata, installing packages, creating files
+            and starting services
+    
+    cfn-signal:
+        wrapper to signal with a Creation Policy or Wait Condition so you can
+            synchronize other resources in stack with the app being ready
+
+    cfn-get-metadata:
+        wrapper script to retrieve all other metadata
+
+    cfn-hup:
+        deamon to check for updates to metadata and execute custom hooks when
+            changes are detected
+
+    Usual Flow:
+        cfn-init => cfn-signal => cfn-hup
+
