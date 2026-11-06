@@ -82,7 +82,7 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/0
         - IpProtocol: icmp
-          FromPort: 8
+          FromPort: -1
           ToPort: -1
           CidrIp: 0.0.0.0/0
           # SourcePrefixListId: pl-xxxxxx
