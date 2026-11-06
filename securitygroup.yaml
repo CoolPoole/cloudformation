@@ -20,7 +20,7 @@ Parameters:
     Default: ShadowOps
 
   pVPCID:
-    Description: List of VPC IDs
+    Description: VPC IDs
     Type: String
     Default: "vpc-063e39ea055749972"
 
