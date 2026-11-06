@@ -19,9 +19,14 @@ Parameters:
     Type: String
     Default: ShadowOps
 
-  pSecurityGroupDescription:
-    Description: Security Group Description
+  pVPCID:
+    Description: List of VPC IDs
     Type: String
+    Default: "vpc-063e39ea055749972"
+
+  #pSecurityGroupDescription:
+  #  Description: Security Group Description
+  #  Type: String
 
   #pSecurityGroupPort:
     #Description: Security Group Ports
@@ -39,6 +44,28 @@ Parameters:
     #ConstraintDescription: Must be a Valid CIDR Range
 
 # -------------------------------------------------------
+# Metadata
+# -------------------------------------------------------
+
+Metadata:
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "General Environment Info"
+        Parameters:
+          - pEnvironmentName
+          - pDepartmentName
+          - pVPCID
+    ParameterLabels:
+      pEnvironmentName:
+        default: "Which Environment will this be deployed?"
+      pDepartmentName:
+        default: "Your Department?"
+      pVPCID:
+        default: "Enter a VPC ID"
+
+# -------------------------------------------------------
 # Resources
 # -------------------------------------------------------
 
@@ -48,11 +75,15 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: all inbound internal inbound connections
-      GroupName: "Internal Security Group"
+      VpcId: !Ref pVPCID
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
           CidrIp: 0.0.0.0/0
           # SourcePrefixListId: pl-xxxxxx
           # SourceSecurityGroupId: sg-xxxxxx
@@ -67,7 +98,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: allow external inbound connections
-      GroupName: "External Security Group"
+      VpcId: !Ref pVPCID
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
@@ -86,7 +117,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: all management inbound connections
-      GroupName: "Management Security Group"
+      VpcId: !Ref pVPCID
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
