@@ -15,6 +15,7 @@ The notes folder contains individual notes around the learned aspect of Cloudfor
 - Outputs
 - Rules
 - Metadata
+- UserData-cfint
 
 ## Files
 
@@ -56,6 +57,15 @@ The notes folder contains individual notes around the learned aspect of Cloudfor
     - AWS::EC2::Instance
     - AWS::EC2::NetworkInterface
     - AWS::EC2::NetworkInterfaceAttachment
+
+### imdsv2-launch-template
+---
+
+- Contains resources and outputs
+- Uses !Ref
+    - !Ref is used to reference resources
+- Typs:
+    - AWS::EC2::LaunchTemplate
 
 
 
