@@ -33,10 +33,54 @@ Parameters:
       - ami-03b1242ace3ae693f
       - ami-018adf6c926c8bf88
 
+  pVpcID:
+    Description: Virtual Private Cloud Identifier
+    Type: AWS::EC2::VPC::Id
+
   pKeyPairID:
     Description: SSH Keypair
     Type: AWS::EC2::KeyPair::KeyName
     Default: my-test-keypair
+
+  pAZ:
+    Description: Target Availability Zone
+    Type: AWS::EC2::AvailabilityZone::Name
+
+  pMgmtSubnetID:
+    Description: Management Subnet ID
+    Type: AWS::EC2::Subnet::Id
+
+  pMgmtIpAddr:
+    Description: IP Address of Management Interface
+    Type: String
+    MinLength: '7'
+    MaxLength: '15'
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})
+    ConstraintDescription: Must be a Valid IP Address
+
+  pInternalSubnetID:
+    Description: Internal Subnet ID
+    Type: AWS::EC2::Subnet::Id
+
+  pInternalIpAddr:
+    Description: IP Address of Internal Interface
+    Type: String
+    MinLength: '7'
+    MaxLength: '15'
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})
+    ConstraintDescription: Must be a Valid IP Address
+
+  pExternalSubnetID:
+    Description: External Subnet ID
+    Type: AWS::EC2::Subnet::Id
+
+  pExternalIpAddr:
+    Description: IP Address of External Interface
+    Type: String
+    MinLength: '7'
+    MaxLength: '15'
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})
+    ConstraintDescription: Must be a Valid IP Address
 
   pAdminPassword:
     Description: Admin Password for Setup
@@ -101,24 +145,63 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: "Environment Configuration"
+          default: "General Information"
         Parameters:
           - pEnvironmentName
+          - pHostName
+          - pAdminPassword
       - Label:
           default: "EC2 Configuration"
         Parameters:
+          - pVpcID
+          - pAZ
           - pInstanceType
           - pImageID
           - pKeyPairID
+      - Label:
+          default: "Mgmt Subnet Info"
+        Parameters:
+          - pMgmtSubnetID
+          - pMgmtIpAddr
+      - Label:
+          default: "Internal Subnet Info"
+        Parameters:
+          - pInternalSubnetID
+          - pInternalIpAddr
+      - Label:
+          default: "External Subnet Info"
+        Parameters:
+          - pExternalSubnetID
+          - pExternalIpAddr
     ParameterLabels:
       pEnvironmentName:
         default: "Which Environment will this be deployed to?"
+      pHostName:
+        default: "Enter a Hostname."
+      pAdminPassword:
+        default: "Enter the Adminstrator Password."
+      pVpcID:
+        default: "Select a VPC."
+      pAZ:
+        default: "Select an AZ."
       pInstanceType:
         default: "What size instance would you like?"
       pImageID:
         default: "What Image would you like? 25 Mbps, 200 Mbps, or Full?"
       pKeyPairID:
         default: "Select Your KeyPair."
+      pMgmtSubnetID:
+        default: "Select Mgmt Subnet."
+      pMgmtIpAddr:
+        default: "Enter an IP Address."
+      pInternalSubnetID:
+        default: "Select Internal Subnet."
+      pInternalIpAddr:
+        default: "Enter an IP Address."
+      pExternalSubnetID:
+        default: "Select External Subnet."
+      pExternalIpAddr:
+        default: "Enter an IP Address."
 
 # ------------------------------------------------------
 # Resources
@@ -129,9 +212,9 @@ Resources:
   rEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-#      AvailabilityZone: xxxxx
+      AvailabilityZone: !Ref pAZ
       BlockDeviceMappings:
-        - DeviceName: /dev/xda
+        - DeviceName: /dev/xvda
           Ebs:
             VolumeType: gp3
             VolumeSize: 100
@@ -159,15 +242,15 @@ Resources:
       NetworkInterfaces:
         - GroupSet:
             - !ImportValue MgmtSecurityGroup
-          PrivateIpAddress: 10.1.2.15
+          PrivateIpAddress: !Ref pMgmtIpAddr
           AssociatePublicIpAddress: false
           DeviceIndex: '0'
           DeleteOnTermination: true
           SubnetId:
-            - !ImportValue Mgmt-Subnet
+            - !Ref pMgmtSubnetID
       PropagateTagsToVolumeOnCreation: true
       SourceDestCheck: false
-      SubnetId: !ImportValue Mgmt-Subnet
+      SubnetId: !Ref pMgmtSubnetID
       UserData:
         Fn:Base64: !Sub |
           #!/bin/bash
@@ -189,6 +272,8 @@ Resources:
           tmsh modify auth user admin password '{pAdminPassword}'
 
           # optional basics
+          tmsh modify sys httpd auth-pam-validate-ip off
+          tmsh modify sys db config.allow.rfc3927 { value "enable" }
           tmsh modify sys global-settings hostname ${Hostname}
 
           tmsh save sys config
@@ -205,9 +290,9 @@ Resources:
       Description: "The Internal Subnet Interface"
       GroupSet:
         - !ImportValue InternalSecurityGroup
-      PrivateIpAddress: 10.1.3.15
+      PrivateIpAddress: !Ref pInternalIpAddr
       SourceDestCheck: false
-      SubnetId: !ImportValue Private-Subnet-1
+      SubnetId: !Ref pInternalSubnetID
       Tags:
         - Key: Name
           Value: !Sub ${pEnvironmentName}-internal
@@ -228,7 +313,7 @@ Resources:
         - !ImportValue ExternalSecurityGroup
       PrivateIpAddress: 10.1.1.15
       SourceDestCheck: false
-      SubnetId: !ImportValue Public-Subnet-1
+      SubnetId: !Ref pExternalSubnetID
       Tags:
         - Key: Name
           Value: !Sub ${pEnvironmentName}-external
